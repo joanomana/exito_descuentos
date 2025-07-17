@@ -144,37 +144,43 @@ const cliProgress = require('cli-progress');
         await page.goto(url, { waitUntil: 'networkidle2' });
 
         const productos = await page.evaluate((descuentoMinimo) => {
-        const resultados = [];
-        const grid = document.querySelector('.product-grid_fs-product-grid___qKN2');
-        if (!grid) return resultados;
+            const resultados = [];
+            const grid = document.querySelector('.product-grid_fs-product-grid___qKN2');
+            if (!grid) return resultados;
 
-        const items = grid.querySelectorAll('li');
+            const items = grid.querySelectorAll('li');
 
-        items.forEach(item => {
-            const descuentoElem = item.querySelector('.priceSection_container-promotion_discount__iY3EO span[data-percentage="true"]');
-            if (!descuentoElem) return;
+            items.forEach(item => {
+                const descuentoElem = item.querySelector('.priceSection_container-promotion_discount__iY3EO span[data-percentage="true"]');
+                if (!descuentoElem) return;
 
-            const descuento = parseInt(descuentoElem.textContent.trim());
-            if (descuento >= descuentoMinimo) {
-            const titulo = item.querySelector('h3.styles_name__qQJiK')?.textContent.trim();
-            const marca = item.querySelector('h3.styles_brand__IdJcB')?.textContent.trim();
-            const precioOriginal = item.querySelector('.priceSection_container-promotion_price-dashed__FJ7nI')?.textContent.trim();
-            const precioConDescuento = item.querySelector('[data-fs-container-price-otros]')?.textContent.trim();
-            const enlace = item.querySelector('a[data-testid="product-link"]')?.href;
+                const descuento = parseInt(descuentoElem.textContent.trim());
+                if (descuento >= descuentoMinimo) {
+                    const titulo = item.querySelector('h3.styles_name__qQJiK')?.textContent.trim();
+                    const marca = item.querySelector('h3.styles_brand__IdJcB')?.textContent.trim();
+                    const precioOriginal = item.querySelector('.priceSection_container-promotion_price-dashed__FJ7nI')?.textContent.trim();
+                    const precioConDescuento = item.querySelector('[data-fs-container-price-otros]')?.textContent.trim();
+                    const enlace = item.querySelector('a[data-testid="product-link"]')?.href;
 
-            resultados.push({
-                titulo,
-                marca,
-                descuento: `${descuento}%`,
-                precioOriginal,
-                precioConDescuento,
-                enlace: enlace?.startsWith('http') ? enlace : `https://www.exito.com${enlace}`
+                    
+                    const aliadoElem = item.querySelector('.allieds-display_fs-best-allied-info__DImuP');
+                    const precioAliado = aliadoElem?.textContent.trim() || null;
+
+                    resultados.push({
+                        titulo,
+                        marca,
+                        descuento: `${descuento}%`,
+                        precioOriginal,
+                        precioConDescuento,
+                        precioAliado,
+                        enlace: enlace?.startsWith('http') ? enlace : `https://www.exito.com${enlace}`
+                    });
+                }
             });
-            }
-        });
 
-        return resultados;
+            return resultados;
         }, descuentoMinimo);
+
 
         productosTotales.push(...productos);
         progressBar.increment();
