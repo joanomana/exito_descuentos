@@ -34,6 +34,13 @@ const cliProgress = require('cli-progress');
             }
         },
         {
+            name: 'Electrodomésticos',
+            value: {
+            nombre: 'Electrodomésticos',
+            link: 'https://www.exito.com/electrodomesticos?vendido-por=exito&category-1=electrodomesticos&facets=vendido-por%2Ccategory-1&sort=discount_desc&page='
+            }
+        },
+        {
             name: 'Hogar y decoración',
             value: {
             nombre: 'Hogar y decoración',
@@ -188,7 +195,7 @@ const cliProgress = require('cli-progress');
 
     progressBar.stop();
 
-    const fileName = `cat_${nombre}.json`;
+    const fileName = `oferta.json`;
     fs.writeFileSync(fileName, JSON.stringify(productosTotales, null, 2));
 
     console.log(`✅ Total productos encontrados con descuento ≥ ${descuentoMinimo}%: ${productosTotales.length}`);
