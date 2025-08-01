@@ -9,6 +9,7 @@ const maxPaginas = 50;
 const ejecutarScraper = async () => {
     try {
         await conectarDB();
+        console.log('🔍 URI desde env:', process.env.MONGODB_URI);
 
         for (const categoria of categoriasDisponibles) {
             console.log(`\n📦 Procesando categoría: ${categoria.name}`);
