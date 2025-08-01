@@ -6,7 +6,17 @@ const scrapeCategoria = async (categoria, descuentoMinimo, maxPaginas) => {
     const baseUrl = link;
     const productosTotales = [];
 
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--single-process'
+        ]
+    });
+
     const page = await browser.newPage();
 
     // 🚫 Bloquear recursos innecesarios
