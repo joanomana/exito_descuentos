@@ -9,45 +9,66 @@ const maxPaginas = 50;
 const ejecutarScraper = async () => {
     try {
         await conectarDB();
-        console.log('🔍 URI desde env:', process.env.MONGODB_URI);
+        console.log('🔗 Conectado a MongoDB');
+
+        const todosLosProductos = [];
 
         for (const categoria of categoriasDisponibles) {
-            console.log(`\n📦 Procesando categoría: ${categoria.name}`);
-            
+        console.log(`\n📦 Procesando categoría: ${categoria.name}`);
+        let erroresEnCategoria = 0;
 
-            for (let i = 0; i < 2; i++) {
-                console.log(`🔁 Corrida ${i + 1}/2`);
+        for (let i = 0; i < 1; i++) {
 
-                const productos = await scrapeCategoria(categoria, descuentoMinimo, maxPaginas);
-                console.log(`🧪 Total productos devueltos por el scraper: ${productos.length}`);
-                console.log('📋 Ejemplo de producto:', productos[0]);
+            const productos = await scrapeCategoria(categoria, descuentoMinimo, maxPaginas);
 
+            console.log(`🧪 Productos obtenidos: ${productos.length}`);
 
-                if (!productos || productos.length === 0) {
-                    console.log(`⚠️ No se encontraron productos en "${categoria.name}" en la corrida ${i + 1}`);
-                    continue;
-                }
+            if (!productos.length) {
+            erroresEnCategoria++;
+            console.warn(`⚠️ No se encontraron productos en ${categoria.name} (corrida ${i + 1})`);
+            } else {
+            todosLosProductos.push(...productos);
+            }
 
-                try {
-                    const resultado = await Producto.insertMany(productos, { ordered: false });
-                    console.log(`✅ Insertados ${resultado.length} productos nuevos en "${categoria.name}" (corrida ${i + 1})`);
-                } catch (error) {
-                    if (error.code === 11000 || error.message.includes('duplicate key')) {
-                        
-                        const insertados = error.insertedDocs?.length || 0;
-                        console.warn(`⚠️ Productos duplicados detectados en "${categoria.name}" (corrida ${i + 1}). Insertados: ${insertados}`);
-                    } else {
-                        console.error(`❌ Error al insertar productos en "${categoria.name}":`, error.message);
-                    }
-                }
+            if (erroresEnCategoria >= 3) {
+            console.error(`❌ Más de 3 fallos en ${categoria.name}. Pasando a la siguiente categoría.`);
+            break;
             }
         }
-        
-        console.log('\n🏁 Scraping finalizado y guardado en MongoDB.\n');
-    } catch (error) {
-        console.error('❌ Error al ejecutar el scraper:', error.message);
-    }
+        }
 
+        console.log(`\n📊 Total de productos únicos antes de insertar: ${todosLosProductos.length}`);
+
+        // 💡 Opcional: Filtrar duplicados antes de insertar
+        const claveUnica = p => `${p.titulo}-${p.precioConDescuento}`;
+        const productosFiltrados = Object.values(
+        todosLosProductos.reduce((acc, prod) => {
+            const clave = claveUnica(prod);
+            acc[clave] = prod; // sobrescribe duplicados
+            return acc;
+        }, {})
+        );
+
+        console.log(`🧼 Después de eliminar duplicados: ${productosFiltrados.length}`);
+
+        try {
+        const resultado = await Producto.insertMany(productosFiltrados, { ordered: false });
+        console.log(`✅ Insertados correctamente ${resultado.length} productos nuevos`);
+        } catch (error) {
+        if (error.code === 11000 || error.message.includes('duplicate key')) {
+            const insertados = error.insertedDocs?.length || 0;
+            console.warn(`⚠️ Algunos productos ya estaban en la base. Insertados: ${insertados}`);
+        } else {
+            console.error(`❌ Error insertando productos en MongoDB:`, error.message);
+        }
+        }
+
+        console.log('\n🏁 Scraping completado.\n');
+    } catch (err) {
+        console.error('❌ Error general:', err.message);
+    } finally {
+        process.exit();
+    }
 };
 
 ejecutarScraper();

@@ -33,6 +33,9 @@ const scrapeCategoria = async (categoria, descuentoMinimo, maxPaginas) => {
 
     progressBar.start(maxPaginas, 0);
 
+    let paginasFallidas = 0;
+    const maxPaginasFallidas = 3;
+
     for (let currentPage = 0; currentPage < maxPaginas; currentPage++) {
         const url = `${baseUrl}${currentPage}`;
         let success = false;
@@ -77,7 +80,6 @@ const scrapeCategoria = async (categoria, descuentoMinimo, maxPaginas) => {
                                 precioAliado,
                                 enlace: enlace?.startsWith('http') ? enlace : `https://www.exito.com${enlace}`,
                                 timestamp: new Date().toISOString()
-
                             });
                         }
                     });
@@ -93,7 +95,15 @@ const scrapeCategoria = async (categoria, descuentoMinimo, maxPaginas) => {
                 retries++;
 
                 if (retries > maxRetries) {
-                    console.error(`❌ Falló 2 veces la página ${currentPage} de "${nombre}". Continuando...`);
+                    paginasFallidas++;
+                    console.error(`❌ Falló 2 veces la página ${currentPage} de "${nombre}". Total fallidas: ${paginasFallidas}`);
+
+                    if (paginasFallidas >= maxPaginasFallidas) {
+                        console.error(`🚫 Más de ${maxPaginasFallidas} páginas fallidas en "${nombre}". Saltando a la siguiente categoría...`);
+                        progressBar.stop();
+                        await browser.close();
+                        return productosTotales;
+                    }
                 } else {
                     console.log(`🔁 Reintentando página ${currentPage}...`);
                 }
@@ -106,9 +116,7 @@ const scrapeCategoria = async (categoria, descuentoMinimo, maxPaginas) => {
     progressBar.stop();
     await browser.close();
 
-    
     console.log(`🧪 Total productos encontrados en "${nombre}": ${productosTotales.length}`);
-
     return productosTotales;
 };
 
