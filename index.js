@@ -17,34 +17,37 @@ const ejecutarScraper = async () => {
         console.log(`\n📦 Procesando categoría: ${categoria.name}`);
         let erroresEnCategoria = 0;
 
-        for (let i = 0; i < 1; i++) {
-
+        for (let i = 0; i < 2; i++) {
+            try {
             const productos = await scrapeCategoria(categoria, descuentoMinimo, maxPaginas);
 
             console.log(`🧪 Productos obtenidos: ${productos.length}`);
 
             if (!productos.length) {
-            erroresEnCategoria++;
-            console.warn(`⚠️ No se encontraron productos en ${categoria.name} (corrida ${i + 1})`);
+                erroresEnCategoria++;
+                console.warn(`⚠️ No se encontraron productos en ${categoria.name} (corrida ${i + 1})`);
             } else {
-            todosLosProductos.push(...productos);
+                todosLosProductos.push(...productos);
             }
 
             if (erroresEnCategoria >= 3) {
-            console.error(`❌ Más de 3 fallos en ${categoria.name}. Pasando a la siguiente categoría.`);
-            break;
+                console.error(`❌ Más de 3 fallos en ${categoria.name}. Pasando a la siguiente categoría.`);
+                break;
+            }
+            } catch (err) {
+            erroresEnCategoria++;
+            console.error(`🚨 Error al procesar ${categoria.name}:`, err.message);
             }
         }
         }
 
         console.log(`\n📊 Total de productos únicos antes de insertar: ${todosLosProductos.length}`);
 
-        // 💡 Opcional: Filtrar duplicados antes de insertar
         const claveUnica = p => `${p.titulo}-${p.precioConDescuento}`;
         const productosFiltrados = Object.values(
         todosLosProductos.reduce((acc, prod) => {
             const clave = claveUnica(prod);
-            acc[clave] = prod; // sobrescribe duplicados
+            acc[clave] = prod;
             return acc;
         }, {})
         );
