@@ -4,8 +4,8 @@ const Producto = require('./src/models/producto');
 const categoriasDisponibles = require('./src/data/categorias');
 
 
-const DESCUENTO_MINIMO = 70;
-const MAX_PAGINAS = 50;
+const DESCUENTO_MINIMO = 50;
+const MAX_PAGINAS = 60;
 const CORRIDAS_POR_CATEGORIA = 2;
 
 
