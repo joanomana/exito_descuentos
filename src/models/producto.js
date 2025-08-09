@@ -17,6 +17,7 @@ const productoSchema = new mongoose.Schema({
   categoria: { type: String, index: true },
 
   enlace: { type: String, required: true, unique: true, index: true },
+  imagen: String,
 
   lastSeenAt: { type: Date, index: true },
 

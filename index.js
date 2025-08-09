@@ -4,8 +4,8 @@ const Producto = require('./src/models/producto');
 const categoriasDisponibles = require('./src/data/categorias');
 
 
-const DESCUENTO_MINIMO = 50;
-const MAX_PAGINAS = 60;
+const DESCUENTO_MINIMO = 60;
+const MAX_PAGINAS = 40;
 const CORRIDAS_POR_CATEGORIA = 2;
 
 
@@ -85,7 +85,8 @@ const ejecutarScraper = async () => {
                                 categoria: p.categoria,                 
                                 enlace: p.enlace,
                                 lastSeenAt: runTag,                     
-                                timestamp: new Date(),                 
+                                timestamp: new Date(), 
+                                imagen: p.imagen || null,                
                             },
                             $setOnInsert: {
                                 creadoEn: new Date(),

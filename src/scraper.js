@@ -47,6 +47,17 @@ const scrapeCategoria = async (categoria, descuentoMinimo, maxPaginas) => {
                 const grid = document.querySelector('.product-grid_fs-product-grid___qKN2');
                 if (!grid) return resultados;
 
+                const firstUrlFromSrcset = (srcset) => {
+                    if (!srcset) return null;
+                    const first = String(srcset).split(',')[0]?.trim();
+                    return first?.split(/\s+/)[0] || null; // "url 300w" -> "url"
+                };
+
+                const absolutize = (u) => {
+                    if (!u) return null;
+                    return /^https?:\/\//i.test(u) ? u : `https://www.exito.com${u}`;
+                };
+
                 const items = grid.querySelectorAll('li');
                 items.forEach(item => {
                     const descuentoElem = item.querySelector('.priceSection_container-promotion_discount__iY3EO span[data-percentage="true"]');
@@ -58,9 +69,23 @@ const scrapeCategoria = async (categoria, descuentoMinimo, maxPaginas) => {
                         const marca = item.querySelector('h3.styles_brand__IdJcB')?.textContent.trim();
                         const precioOriginal = item.querySelector('.priceSection_container-promotion_price-dashed__FJ7nI')?.textContent.trim();
                         const precioConDescuento = item.querySelector('[data-fs-container-price-otros]')?.textContent.trim();
-                        const enlace = item.querySelector('a[data-testid="product-link"]')?.href;
+                        const enlaceRel = item.querySelector('a[data-testid="product-link"]')?.href;
                         const aliadoElem = item.querySelector('.allieds-display_fs-best-allied-info__DImuP');
                         const precioAliado = aliadoElem?.textContent.trim() || null;
+
+                        const imgEl =
+                            item.querySelector('[data-fs-product-card-image="true"] img') ||
+                            item.querySelector('a[data-testid="product-link"] img') ||
+                            item.querySelector('img');
+
+                        let imagen =
+                            imgEl?.getAttribute('src') ||
+                            imgEl?.getAttribute('data-src') ||
+                            firstUrlFromSrcset(imgEl?.getAttribute('srcset'));
+
+                        imagen = absolutize(imagen);
+                        const enlace = absolutize(enlaceRel);
+
 
                         const urlAbsoluta = enlace?.startsWith('http') ? enlace : (enlace ? `https://www.exito.com${enlace}` : null);
 
@@ -74,6 +99,7 @@ const scrapeCategoria = async (categoria, descuentoMinimo, maxPaginas) => {
                             precioConDescuento,
                             precioAliado,
                             enlace: urlAbsoluta,
+                            imagen: imagen || null,
                             timestamp: new Date().toISOString()
                             });
                         }
