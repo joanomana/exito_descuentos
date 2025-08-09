@@ -9,19 +9,15 @@ const scrapeCategoria = async (categoria, descuentoMinimo, maxPaginas) => {
     const browser = await puppeteer.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
-
+    });
 
     const page = await browser.newPage();
 
     await page.setRequestInterception(true);
     page.on('request', (req) => {
-        const resourceType = req.resourceType();
-        if (['image', 'stylesheet', 'font'].includes(resourceType)) {
-        req.abort();
-        } else {
-        req.continue();
-        }
+        const type = req.resourceType();
+        if (['image', 'stylesheet', 'font'].includes(type)) req.abort();
+        else req.continue();
     });
 
     const progressBar = new cliProgress.SingleBar({
@@ -44,46 +40,47 @@ const scrapeCategoria = async (categoria, descuentoMinimo, maxPaginas) => {
 
         while (!success && retries <= maxRetries) {
         try {
-            await page.goto(url, {
-            waitUntil: 'networkidle2',
-            timeout: 30000
-            });
+            await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
 
             const productos = await page.evaluate((descuentoMinimo, nombre) => {
-            const resultados = [];
-            const grid = document.querySelector('.product-grid_fs-product-grid___qKN2');
-            if (!grid) return resultados;
+                const resultados = [];
+                const grid = document.querySelector('.product-grid_fs-product-grid___qKN2');
+                if (!grid) return resultados;
 
-            const items = grid.querySelectorAll('li');
-            items.forEach(item => {
-                const descuentoElem = item.querySelector('.priceSection_container-promotion_discount__iY3EO span[data-percentage="true"]');
-                if (!descuentoElem) return;
+                const items = grid.querySelectorAll('li');
+                items.forEach(item => {
+                    const descuentoElem = item.querySelector('.priceSection_container-promotion_discount__iY3EO span[data-percentage="true"]');
+                    if (!descuentoElem) return;
 
-                const descuento = parseInt(descuentoElem.textContent.trim());
-                if (descuento >= descuentoMinimo) {
-                const titulo = item.querySelector('h3.styles_name__qQJiK')?.textContent.trim();
-                const marca = item.querySelector('h3.styles_brand__IdJcB')?.textContent.trim();
-                const precioOriginal = item.querySelector('.priceSection_container-promotion_price-dashed__FJ7nI')?.textContent.trim();
-                const precioConDescuento = item.querySelector('[data-fs-container-price-otros]')?.textContent.trim();
-                const enlace = item.querySelector('a[data-testid="product-link"]')?.href;
-                const aliadoElem = item.querySelector('.allieds-display_fs-best-allied-info__DImuP');
-                const precioAliado = aliadoElem?.textContent.trim() || null;
+                    const descuento = parseInt(descuentoElem.textContent.trim());
+                    if (descuento >= descuentoMinimo) {
+                        const titulo = item.querySelector('h3.styles_name__qQJiK')?.textContent.trim();
+                        const marca = item.querySelector('h3.styles_brand__IdJcB')?.textContent.trim();
+                        const precioOriginal = item.querySelector('.priceSection_container-promotion_price-dashed__FJ7nI')?.textContent.trim();
+                        const precioConDescuento = item.querySelector('[data-fs-container-price-otros]')?.textContent.trim();
+                        const enlace = item.querySelector('a[data-testid="product-link"]')?.href;
+                        const aliadoElem = item.querySelector('.allieds-display_fs-best-allied-info__DImuP');
+                        const precioAliado = aliadoElem?.textContent.trim() || null;
 
-                resultados.push({
-                    categoria: nombre,
-                    titulo,
-                    marca,
-                    descuento: `${descuento}%`,
-                    precioOriginal,
-                    precioConDescuento,
-                    precioAliado,
-                    enlace: enlace?.startsWith('http') ? enlace : `https://www.exito.com${enlace}`,
-                    timestamp: new Date().toISOString()
+                        const urlAbsoluta = enlace?.startsWith('http') ? enlace : (enlace ? `https://www.exito.com${enlace}` : null);
+
+                        if (urlAbsoluta) {
+                            resultados.push({
+                            categoria: nombre,
+                            titulo,
+                            marca,
+                            descuento: `${descuento}%`,
+                            precioOriginal,
+                            precioConDescuento,
+                            precioAliado,
+                            enlace: urlAbsoluta,
+                            timestamp: new Date().toISOString()
+                            });
+                        }
+                    }
                 });
-                }
-            });
 
-            return resultados;
+                return resultados;
             }, descuentoMinimo, nombre);
 
             productosTotales.push(...productos);
